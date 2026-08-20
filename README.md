@@ -1,11 +1,21 @@
 # BlitzPRO
 ![BlitzPRO Logo](logo.png)
 
-# Porting from old Blitz3D. It's easy!
+# What's new in the engine, and what else got improved?
+The BlitzPRO engine is a remake of the [Blitz3D TSS](https://github.com/ZiYueCommentary/Blitz3D) engine.
+It was updated to support Jolt Physics, DirectX 9 & DirectX 11 backends.
+It got a lot of security, optimization and stability patches, including new debugger flame graph, better crash logs and many other small improvements, such as syntax sugar (+=, -=, *= and etc.), comment blocks, function pointers and other stuff that you can find in our documentation!
+
+You can join our [discord](https://discord.gg/7z4XZ2K2NA) server to get more info about the current plans or to ask BlitzPRO developers for the features you want / discuss current changes & talk to other developers!
+
+Feel free to make [issue](https://github.com/Euclid-Labs-Studio/BlitzPRO/issues/new) if you have found any bug!
+
+
+# Porting from old Blitz3D to the new engine is easy!
 
 ## 1. Textures: `CreateTexture` / `LoadTexture` / `LoadAnimTexture` flags
 
-Flags 1-128 match classic Blitz3D one-to-one. Changed the meaning of 256 and 512.
+Flags 1-128 match classic Blitz3D one-to-one. Only 256 and 512 flags got a new usage.
 
 | Flag | Classic Blitz3D | BlitzPRO |
 |---|---|---|
@@ -31,9 +41,9 @@ Flags 1-128 match classic Blitz3D one-to-one. Changed the meaning of 256 and 512
 | 1048576| - | A32B32G32R32F |
 
 What to do:
-- Flags 1-128 need no changes - everything is as before (including clamp U/V, sphere and cube).
-- **Render-to-texture.** The old `CreateTexture(w,h,256)` now creates a texture "without mipmaps". `SetBuffer` will accept it and rendering still works, but through emulation (copying back and forth) - this is slow. For a real hardware render target add flag **1024**.
-- Flag 512 ("high color" in classic) now means DYNAMIC (fast lock, not a render target). If it was used for rendering, replace it with 1024.
+- Flags 1-128 don't require any changes - everything stays as before (including clamp U/V, sphere and cube).
+- **Render-to-texture.** The old `CreateTexture(w,h,256)` now creates a texture "without mipmaps". `SetBuffer` will accept it and the rendering would still work, but only through the emulation (copying back and forth). This is slow, so, for a real hardware render target set the **1024** flag.
+- Flag 512 ("high color" in classic) now means DYNAMIC (fast lock, not a render target). If it is being used for rendering, replace it with 1024.
 - RT formats: combine 1024 with a format flag (2048 / 4096 / 131072 / 1048576).
 - Depth textures: 8192 (D16), 262144 (D32), 524288 (D24S8) - for shadows and as the `depth` parameter of `SetBuffer`.
 
@@ -41,8 +51,8 @@ What to do:
 
 Signature extended: `SetBuffer buffer, depth=0, pass=0`.
 
-- `buffer` - as before (e.g. `TextureBuffer(tex, 0)`). Any texture is accepted, but without flag 1024 rendering into it goes through emulation (slow), which is not enough for per-frame render targets.
-- `depth` - optional depth buffer (D16 / D32 / D24S8, flags 8192 / 262144 / 524288). If omitted, the engine uses the screen depth buffer, but only when its size matches `buffer`'s. For 3D rendering into a texture, pass your own depth buffer.
+- `buffer` - as before (e.g. `TextureBuffer(tex, 0)`). Any texture is accepted, but without the 1024 flag rendering will go through the emulation (it is slow), which is not enough for per-frame render targets.
+- `depth` - optional depth buffer (D16 / D32 / D24S8, flags 8192 / 262144 / 524288). If omitted, the game will use screen depth buffer, but only when its size matches `buffer`'s. For 3D rendering into a texture, pass your own depth buffer.
 - `pass` - index of the passed target buffer (0..N), for writing into several render targets in one pass. `ResetBuffer` clears passes > 0.
 
 ## 3. Graphics drivers: Direct3D 9 and Direct3D 11
@@ -51,21 +61,21 @@ Signature extended: `SetBuffer buffer, depth=0, pass=0`.
 - The backend is selected via `EngineSetting "graphicslevel", "..."`: levels **90-93 → D3D9** (default is 90), levels **100-122 → D3D11**. If D3D11 is not supported, the engine automatically falls back to D3D9.
 - Other level values (classic DX7) are no longer supported.
 - Behavior may differ between backends: for example, a 32-bit depth texture (D32, flag 262144) is created only on D3D11; on D3D9 it becomes D24X8. See texture flags (section 1) for the rest.
-- `GfxDriver3D`/`CountGfxModes3D`/`Windowed3D` are still there, but "driver selection" is now a DirectX level, not a list of drivers as in classic.
+- `GfxDriver3D`/`CountGfxModes3D`/`Windowed3D` are still there, but "driver selection" is now a DirectX level, it's not a list of drivers as in classic.
 
 ## 4. Collisions: the old collisions system lives, but works a little bit differently
 
-The old commands are not removed and match the syntax:
+The old commands are not removed and they do match the syntax:
 
 - `EntityType entity, type, recurs=0` (values 0-999)
 - `EntityRadius x#, y#=0`, `EntityBox x,y,z,w,h,d`, `EntityCylinder x#, y#=0` (new), `GetEntityShape`
 - `EntityPickMode entity, enable, obscurer=1`, `GetEntityPickMode` - now what you have set for object (EntityBox, EntityRadius), then you will be picking.
 - `Collisions src_type, dest_type, response` - method has been removed, collisions now work with what you have set.
 - `EntityCollided`, `CountCollisions`, `CollisionX/Y/Z`, `CollisionNX/NY/NZ`, `CollisionTime`, `CollisionImpulse`, `CollisionDistance`, `CollisionEntity`, `CollisionSurface`, `CollisionTriangle`
-- Picking: `CameraPick`, `EntityPick`, `LinePick`, `EntityVisible` everything work as before
+- Picking: `CameraPick`, `EntityPick`, `LinePick`, `EntityVisible` everything works as before.
 
 Details:
-- **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the mesh geometry is used.
+- **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the body will use dynamic collider.
 - For **non-physical** objects the old swept logic remains: each `UpdateWorld`, objects with a non-zero `EntityType` record collisions along their movement path and the position is corrected against planes. So `CaptureWorld`, `ResetEntity`, moving via `MoveEntity`/`TranslateEntity`/`PositionEntity`, and changing `EntityRadius` at runtime work as before.
 - A type only participates in physics as "dynamic" if a non-zero response is set for it in `Collisions`; otherwise it is static.
 - `EntityRadius` with zero radii and `EntityBox` with an empty box hide the collider.
@@ -77,9 +87,15 @@ Important:
 - Physics is designed for metric scale (units roughly 0.01-10). If the scene uses large units, tune `physics::scale`.
 
 ## 6. Models
-- MD2 and BSP removed
+- MD2 and BSP formats got removed
 - Current supported mesh formats: `.x`, `.b3d`, `obj`, `fbx`, `gltf`
 
 ## This engine is used by:
-- SCP: Containment Breach 2
-- SCP: Containment Breach Ultimate Edition Reborn
+- [SCP: Containment Breach 2](https://store.steampowered.com/app/3257000/SCP_Containment_Breach_2/)
+- [SCP: Containment Breach Community Preservation Project](https://store.steampowered.com/app/2178380/SCP__Containment_Breach/)
+- [SCP: Containment Breach Ultimate Edition Reborn 2.2 & older](https://www.moddb.com/mods/scp-containment-breach-ultimate-edition)
+
+<img width="1920" height="1080" alt="173window" src="https://github.com/user-attachments/assets/31f4c1cf-b304-4587-9371-ac751571bce1" />
+
+# In memory of Mark Sibly
+[Mark Sibly](https://github.com/blitz-research), the author of Blitz3D, died on 12 December 2024. 🕯️
