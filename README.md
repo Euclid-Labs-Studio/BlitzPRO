@@ -15,7 +15,7 @@ Feel free to make [issue](https://github.com/Euclid-Labs-Studio/BlitzPRO/issues/
 
 ## 1. Textures: `CreateTexture` / `LoadTexture` / `LoadAnimTexture` flags
 
-Flags 1-128 match classic Blitz3D one-to-one. Only 256 and 512 flags got a new usage.
+Flags 1-128 match classic Blitz3D one-to-one. Flag values 256 and above were renumbered.
 
 | Flag | Classic Blitz3D | BlitzPRO |
 |---|---|---|
@@ -27,25 +27,25 @@ Flags 1-128 match classic Blitz3D one-to-one. Only 256 and 512 flags got a new u
 | 32  | Clamp V                      | Clamp V                           |
 | 64  | Spherical environment map    | Spherical environment map         |
 | 128 | Cubic environment map        | Cubic environment map             |
-| 256 | Store texture in vram        | Disables mip-mapping in any case  |
+| 256 | Store texture in vram        | Hardware Render-Target            |
 | 512 | Force high color textures    | Dynamic texture (fast Lock, NOT a render target) |
-| 1024 | - | Hardware Render-Target |
-| 2048 | - | R32F pixel format |
-| 4096 | - | A16B16G16R16F (half float) |
-| 8192 | - | D16 depth texture |
-| 16384| - | Offscreen texture surface |
-| 32768| - | Texture is not resized by `TextureDivisor` |
-| 131072| - | A2R10G10B10 |
-| 262144| - | 32-bit depth texture (D32) |
-| 524288| - | D24S8 depth-stencil texture |
-| 1048576| - | A32B32G32R32F |
+| 1024 | - | D16 depth texture |
+| 2048 | - | D32 depth texture (D24X8 on DirectX 9) |
+| 4096 | - | D24S8 depth-stencil texture |
+| 8192 | - | R32F pixel format |
+| 16384| - | A16B16G16R16F (half float) |
+| 32768| - | A2R10G10B10 (RGB10) |
+| 65536| - | A32B32G32R32F |
+| 131072| - | Offscreen texture surface |
+| 262144| - | Texture is not resized by `TextureDivisor` |
+| 524288| - | Loads the texture asynchronously |
 
 What to do:
-- Flags 1-128 don't require any changes - everything stays as before (including clamp U/V, sphere and cube).
-- **Render-to-texture.** The old `CreateTexture(w,h,256)` now creates a texture "without mipmaps". `SetBuffer` will accept it and the rendering would still work, but only through the emulation (copying back and forth). This is slow, so, for a real hardware render target set the **1024** flag.
-- Flag 512 ("high color" in classic) now means DYNAMIC (fast lock, not a render target). If it is being used for rendering, replace it with 1024.
-- RT formats: combine 1024 with a format flag (2048 / 4096 / 131072 / 1048576).
-- Depth textures: 8192 (D16), 262144 (D32), 524288 (D24S8) - for shadows and as the `depth` parameter of `SetBuffer`.
+- Flags 1-128 don't require any changes - everything stays as before (including clamp U/V, sphere and cube). `CreateTexture(w,h,128)` still makes a cube map.
+- **Render-to-texture.** Set the **256** flag to get a true hardware render target. Without it `SetBuffer` still accepts the texture and rendering works, but only through emulation (copying back and forth). This is slow, so use the **256** flag for anything you render to.
+- Flag 512 ("high color" in classic) means DYNAMIC (fast lock, not a render target). If it is being used for rendering, replace it with 256.
+- Depth textures: 1024 (D16), 2048 (D32, D24X8 on DirectX 9), 4096 (D24S8) - for shadows and as the `depth` parameter of `SetBuffer`.
+- Flag 524288 loads the texture on a background thread - most useful with `LoadTexture` / `TextureFilter`, wait with `AwaitTextures`.
 
 ## 2. Render targets and `SetBuffer`
 
