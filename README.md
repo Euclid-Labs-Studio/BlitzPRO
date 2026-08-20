@@ -86,7 +86,7 @@ Important:
 - Simulation settings go through `EngineSetting "physics::key", "value"`: `physics::framerate` (60 Hz), `physics::gravity` (`0,-9.81,0`), `physics::scale` (world scale), `physics::meshthickness`, `physics::maxcollisionbodies`.
 - Physics is designed for metric scale (units roughly 0.01-10). If the scene uses large units, tune `physics::scale`.
 
-## 6. Models
+## 5. Models
 - MD2 and BSP formats got removed
 - Current supported mesh formats: `.x`, `.b3d`, `obj`, `fbx`, `gltf`
 
