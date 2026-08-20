@@ -62,7 +62,7 @@ The old commands are not removed and match the syntax:
 - `EntityPickMode entity, enable, obscurer=1`, `GetEntityPickMode` - now what you have set for object (EntityBox, EntityRadius), then you will be picking.
 - `Collisions src_type, dest_type, response` - method has been removed, collisions now work with what you have set.
 - `EntityCollided`, `CountCollisions`, `CollisionX/Y/Z`, `CollisionNX/NY/NZ`, `CollisionTime`, `CollisionImpulse`, `CollisionDistance`, `CollisionEntity`, `CollisionSurface`, `CollisionTriangle`
-- Picking: `CameraPick`, `EntityPick`, `LinePick`, `EntityVisible`, `Picked*` all work
+- Picking: `CameraPick`, `EntityPick`, `LinePick`, `EntityVisible` everything work as before
 
 Details:
 - **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the mesh geometry is used.
