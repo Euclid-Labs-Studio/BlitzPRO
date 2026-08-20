@@ -1,2 +1,86 @@
 # BlitzPRO
-A modified Blitz3D that adds D3D9 and D3D11 rendering with Jolt Physics
+A modified Blitz3D that adds D3D9 and D3D11 rendering and adds Jolt Physics
+![BlitzPRO Logo](logo.png)
+
+# Porting from old Blitz3D. It's easy!
+
+## 1. Textures: `CreateTexture` / `LoadTexture` / `LoadAnimTexture` flags
+
+Flags 1-128 match classic Blitz3D one-to-one. Changed the meaning of 256 and 512.
+
+| Flag | Classic Blitz3D | BlitzPRO |
+|---|---|---|
+| 1   | Color (default)              | Color                             |
+| 2   | Alpha                        | Alpha                             |
+| 4   | Masked                       | Masked                            |
+| 8   | Mipmapped                    | Mipmapped                         |
+| 16  | Clamp U                      | Clamp U                           |
+| 32  | Clamp V                      | Clamp V                           |
+| 64  | Spherical environment map    | Spherical environment map         |
+| 128 | Cubic environment map        | Cubic environment map             |
+| 256 | Store texture in vram        | Disables mip-mapping in any case  |
+| 512 | Force high color textures    | Dynamic texture (fast Lock, NOT a render target) |
+| 1024 | - | Hardware Render-Target |
+| 2048 | - | R32F pixel format |
+| 4096 | - | A16B16G16R16F (half float) |
+| 8192 | - | D16 depth texture |
+| 16384| - | Offscreen texture surface |
+| 32768| - | Texture is not resized by `TextureDivisor` |
+| 131072| - | A2R10G10B10 |
+| 262144| - | 32-bit depth texture (D32) |
+| 524288| - | D24S8 depth-stencil texture |
+| 1048576| - | A32B32G32R32F |
+
+What to do:
+- Flags 1-128 need no changes - everything is as before (including clamp U/V, sphere and cube).
+- **Render-to-texture.** The old `CreateTexture(w,h,256)` now creates a texture "without mipmaps". `SetBuffer` will accept it and rendering still works, but through emulation (copying back and forth) - this is slow. For a real hardware render target add flag **1024**.
+- Flag 512 ("high color" in classic) now means DYNAMIC (fast lock, not a render target). If it was used for rendering, replace it with 1024.
+- RT formats: combine 1024 with a format flag (2048 / 4096 / 131072 / 1048576).
+- Depth textures: 8192 (D16), 262144 (D32), 524288 (D24S8) - for shadows and as the `depth` parameter of `SetBuffer`.
+
+## 2. Render targets and `SetBuffer`
+
+Signature extended: `SetBuffer buffer, depth=0, pass=0`.
+
+- `buffer` - as before (e.g. `TextureBuffer(tex, 0)`). Any texture is accepted, but without flag 1024 rendering into it goes through emulation (slow), which is not enough for per-frame render targets.
+- `depth` - optional depth buffer (D16 / D32 / D24S8, flags 8192 / 262144 / 524288). If omitted, the engine uses the screen depth buffer, but only when its size matches `buffer`'s. For 3D rendering into a texture, pass your own depth buffer.
+- `pass` - index of the passed target buffer (0..N), for writing into several render targets in one pass. `ResetBuffer` clears passes > 0.
+
+## 3. Graphics drivers: Direct3D 9 and Direct3D 11
+
+- The renderer supports two backends: **Direct3D 9** and **Direct3D 11**. **Direct3D 7 is removed.**
+- The backend is selected via `EngineSetting "graphicslevel", "..."`: levels **90-93 → D3D9** (default is 90), levels **100-122 → D3D11**. If D3D11 is not supported, the engine automatically falls back to D3D9.
+- Other level values (classic DX7) are no longer supported.
+- Behavior may differ between backends: for example, a 32-bit depth texture (D32, flag 262144) is created only on D3D11; on D3D9 it becomes D24X8. See texture flags (section 1) for the rest.
+- `GfxDriver3D`/`CountGfxModes3D`/`Windowed3D` are still there, but "driver selection" is now a DirectX level, not a list of drivers as in classic.
+
+## 4. Collisions: the old collisions system lives, but works a little bit differently
+
+The old commands are not removed and match the syntax:
+
+- `EntityType entity, type, recurs=0` (values 0-999)
+- `EntityRadius x#, y#=0`, `EntityBox x,y,z,w,h,d`, `EntityCylinder x#, y#=0` (new), `GetEntityShape`
+- `EntityPickMode entity, enable, obscurer=1`, `GetEntityPickMode` - now what you have set for object (EntityBox, EntityRadius), then you will be picking.
+- `Collisions src_type, dest_type, response` - method has been removed, collisions now work with what you have set.
+- `EntityCollided`, `CountCollisions`, `CollisionX/Y/Z`, `CollisionNX/NY/NZ`, `CollisionTime`, `CollisionImpulse`, `CollisionDistance`, `CollisionEntity`, `CollisionSurface`, `CollisionTriangle`
+- Picking: `CameraPick`, `EntityPick`, `LinePick`, `EntityVisible`, `Picked*` all work
+
+Details:
+- **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the mesh geometry is used.
+- For **non-physical** objects the old swept logic remains: each `UpdateWorld`, objects with a non-zero `EntityType` record collisions along their movement path and the position is corrected against planes. So `CaptureWorld`, `ResetEntity`, moving via `MoveEntity`/`TranslateEntity`/`PositionEntity`, and changing `EntityRadius` at runtime work as before.
+- A type only participates in physics as "dynamic" if a non-zero response is set for it in `Collisions`; otherwise it is static.
+- `EntityRadius` with zero radii and `EntityBox` with an empty box hide the collider.
+- For debugging shapes: `DrawPhysicsDebug aabb, mesh`.
+
+Important:
+- `UpdateWorld elapsed, simulation` - **the second parameter is now the simulation time**. If you pass 0 or less, physics does not step (only the swept collisions from section 4 remain). Previously the second parameter was animation time - code like `UpdateWorld 1, anim_tween` will now tick physics.
+- Simulation settings go through `EngineSetting "physics::key", "value"`: `physics::framerate` (60 Hz), `physics::gravity` (`0,-9.81,0`), `physics::scale` (world scale), `physics::meshthickness`, `physics::maxcollisionbodies`.
+- Physics is designed for metric scale (units roughly 0.01-10). If the scene uses large units, tune `physics::scale`.
+
+## 6. Models
+- MD2 and BSP removed
+- Current supported mesh formats: `.x`, `.b3d`, `obj`, `fbx`, `gltf`
+
+## This engine is used by:
+- SCP: Containment Breach 2
+- SCP: Containment Breach Ultimate Edition Reborn
