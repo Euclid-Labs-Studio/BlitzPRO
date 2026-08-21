@@ -15,7 +15,7 @@ Feel free to make [issue](https://github.com/Euclid-Labs-Studio/BlitzPRO/issues/
 
 ## 1. Textures: `CreateTexture` / `LoadTexture` / `LoadAnimTexture` flags
 
-Flags 1-128 match classic Blitz3D one-to-one. Flag values 256 and above were renumbered.
+Flags 1-128 match classic Blitz3D one-to-one. Flag values 256 and above were changed.
 
 | Flag | Classic Blitz3D | BlitzPRO |
 |---|---|---|
@@ -52,37 +52,35 @@ What to do:
 Signature extended: `SetBuffer buffer, depth=0, pass=0`.
 
 - `buffer` - as before (e.g. `TextureBuffer(tex, 0)`). Any texture is accepted, but without the 1024 flag rendering will go through the emulation (it is slow), which is not enough for per-frame render targets.
-- `depth` - optional depth buffer (D16 / D32 / D24S8, flags 8192 / 262144 / 524288). If omitted, the game will use screen depth buffer, but only when its size matches `buffer`'s. For 3D rendering into a texture, pass your own depth buffer.
+- `depth` - optional depth buffer (D16 / D32 / D24S8, flags 1024 / 2048 / 4096). If omitted, the game will use screen depth buffer, but only when its size matches `buffer`'s. For 3D rendering into a texture, pass your own depth buffer.
 - `pass` - index of the passed target buffer (0..N), for writing into several render targets in one pass. `ResetBuffer` clears passes > 0.
 
 ## 3. Graphics drivers: Direct3D 9 and Direct3D 11
 
 - The renderer supports two backends: **Direct3D 9** and **Direct3D 11**. **Direct3D 7 is removed.**
-- The backend is selected via `EngineSetting "graphicslevel", "..."`: levels **90-93 → D3D9** (default is 90), levels **100-122 → D3D11**. If D3D11 is not supported, the engine automatically falls back to D3D9.
+- The backend is selected via `EngineSetting "graphicslevel", "..."`: levels **90-93 → D3D9** (default is 110), levels **100-122 → D3D11**. If D3D11 is not supported, the engine automatically falls back to D3D9.
 - Other level values (classic DX7) are no longer supported.
-- Behavior may differ between backends: for example, a 32-bit depth texture (D32, flag 262144) is created only on D3D11; on D3D9 it becomes D24X8. See texture flags (section 1) for the rest.
+- Behavior may differ between backends: for example, a 32-bit depth texture (D32, flag 2048) is created only on D3D11; on D3D9 it becomes D24X8. See texture flags (section 1) for the rest.
 - `GfxDriver3D`/`CountGfxModes3D`/`Windowed3D` are still there, but "driver selection" is now a DirectX level, it's not a list of drivers as in classic.
 
 ## 4. Collisions: the old collisions system lives, but works a little bit differently
 
-The old commands are not removed and they do match the syntax:
-
-- `EntityType entity, type, recurs=0` (values 0-999)
-- `EntityRadius x#, y#=0`, `EntityBox x,y,z,w,h,d`, `EntityCylinder x#, y#=0` (new), `GetEntityShape`
+The collision commands changes:
+- `GetEntityShape` - gets EntityBox, EntityRadius, EntityCylinder box (GetEntityShape(ent, &x, &y, &z, &width, &height, &depth))
 - `EntityPickMode entity, enable, obscurer=1`, `GetEntityPickMode` - now what you have set for object (EntityBox, EntityRadius), then you will be picking.
-- `Collisions src_type, dest_type, response` - method has been removed, collisions now work with what you have set.
-- `EntityCollided`, `CountCollisions`, `CollisionX/Y/Z`, `CollisionNX/NY/NZ`, `CollisionTime`, `CollisionImpulse`, `CollisionDistance`, `CollisionEntity`, `CollisionSurface`, `CollisionTriangle`
+- `Collisions src_type, dest_type, method, response` - method has been deprecated, collisions now work with what you have set.
+- `CollisionImpulse` - impulse from physics collisions
 - Picking: `CameraPick`, `EntityPick`, `LinePick`, `EntityVisible` everything works as before.
 
 Details:
-- **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the body will use dynamic collider.
-- For **non-physical** objects the old swept logic remains: each `UpdateWorld`, objects with a non-zero `EntityType` record collisions along their movement path and the position is corrected against planes. So `CaptureWorld`, `ResetEntity`, moving via `MoveEntity`/`TranslateEntity`/`PositionEntity`, and changing `EntityRadius` at runtime work as before.
+- **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the body will use hull shape collider if it's mesh.
+- For **non-physical** objects the old swept logic remains: each `UpdateWorld`, objects with a non-zero `EntityType` record collisions along their movement path and the position is corrected against planes. So `ResetEntity`, moving via `MoveEntity`/`TranslateEntity`/`PositionEntity`, and changing `EntityRadius` at runtime work as before.
 - A type only participates in physics as "dynamic" if a non-zero response is set for it in `Collisions`; otherwise it is static.
 - `EntityRadius` with zero radii and `EntityBox` with an empty box hide the collider.
 - For debugging shapes: `DrawPhysicsDebug aabb, mesh`.
 
 Important:
-- `UpdateWorld elapsed, simulation` - **the second parameter is now the simulation time**. If you pass 0 or less, physics does not step (only the swept collisions from section 4 remain). Previously the second parameter was animation time - code like `UpdateWorld 1, anim_tween` will now tick physics.
+- `UpdateWorld elapsed, simulation` - **the second parameter is now the simulation time**. If you pass 0 or less, physics does not step (only the swept collisions from section 4 remain).
 - Simulation settings go through `EngineSetting "physics::key", "value"`: `physics::framerate` (60 Hz), `physics::gravity` (`0,-9.81,0`), `physics::scale` (world scale), `physics::meshthickness`, `physics::maxcollisionbodies`.
 - Physics is designed for metric scale (units roughly 0.01-10). If the scene uses large units, tune `physics::scale`.
 
