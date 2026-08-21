@@ -19,9 +19,6 @@ Feel free to make [issue](https://github.com/Euclid-Labs-Studio/BlitzPRO/issues/
 - Asynchronous texture loading ($80000 flag)
 - Full working fast UTF-8
 
-# Goals
-- 64-bit support
-
 # Porting from old Blitz3D to the new engine is easy!
 
 ## 1. Textures: `CreateTexture` / `LoadTexture` / `LoadAnimTexture` flags
