@@ -10,6 +10,17 @@ You can join our [discord](https://discord.gg/7z4XZ2K2NA) server to get more inf
 
 Feel free to make [issue](https://github.com/Euclid-Labs-Studio/BlitzPRO/issues/new) if you have found any bug!
 
+# Abilities
+- Direct3D9 and Direct3D11
+- D3D9 and D3D11 FX shaders (hull, domain, geometry shaders available on D3D11 backend)
+- Faster than old Blitz3D
+- Debugger Flame Graph
+- New crash handler
+- Asynchronous texture loading ($80000 flag)
+- Full working fast UTF-8
+
+# Goals
+- 64-bit support
 
 # Porting from old Blitz3D to the new engine is easy!
 
@@ -47,46 +58,29 @@ What to do:
 - Depth textures: 1024 (D16), 2048 (D32, D24X8 on DirectX 9), 4096 (D24S8) - for shadows and as the `depth` parameter of `SetBuffer`.
 - Flag 524288 loads the texture on a background thread - most useful with `LoadTexture` / `TextureFilter`, wait with `AwaitTextures`.
 
-## 2. Render targets and `SetBuffer`
+## 2. Images
+LoadImage now need to be locked correctly - their ImageWidth and ImageWidth is the size of the IMAGE, not its buffer. The image is loaded as a regular texture, and its BufferWidth and BufferHeight are different than ImageWidth and ImageHeight. If you are LockBuffer an image, then you need to use BufferWidth and BufferHeight from ImageBuffer.
+This gives advantage and speed - ResizeImage, ScaleImage, RotateImage, etc..., are super fast. They are SET sizes, but not RESIZE the entire image buffer
 
-Signature extended: `SetBuffer buffer, depth=0, pass=0`.
+## 3. Collisions: the old collisions system lives, but works a little bit differently
 
-- `buffer` - as before (e.g. `TextureBuffer(tex, 0)`). Any texture is accepted, but without the 1024 flag rendering will go through the emulation (it is slow), which is not enough for per-frame render targets.
-- `depth` - optional depth buffer (D16 / D32 / D24S8, flags 1024 / 2048 / 4096). If omitted, the game will use screen depth buffer, but only when its size matches `buffer`'s. For 3D rendering into a texture, pass your own depth buffer.
-- `pass` - index of the passed target buffer (0..N), for writing into several render targets in one pass. `ResetBuffer` clears passes > 0.
-
-## 3. Graphics drivers: Direct3D 9 and Direct3D 11
-
-- The renderer supports two backends: **Direct3D 9** and **Direct3D 11**. **Direct3D 7 is removed.**
-- The backend is selected via `EngineSetting "graphicslevel", "..."`: levels **90-93 → D3D9** (default is 110), levels **100-122 → D3D11**. If D3D11 is not supported, the engine automatically falls back to D3D9.
-- Other level values (classic DX7) are no longer supported.
-- Behavior may differ between backends: for example, a 32-bit depth texture (D32, flag 2048) is created only on D3D11; on D3D9 it becomes D24X8. See texture flags (section 1) for the rest.
-- `GfxDriver3D`/`CountGfxModes3D`/`Windowed3D` are still there, but "driver selection" is now a DirectX level, it's not a list of drivers as in classic.
-
-## 4. Collisions: the old collisions system lives, but works a little bit differently
-
-The collision commands changes:
+The collisions logic changes:
 - `GetEntityShape` - gets EntityBox, EntityRadius, EntityCylinder box (GetEntityShape(ent, &x, &y, &z, &width, &height, &depth))
 - `EntityPickMode entity, enable, obscurer=1`, `GetEntityPickMode` - now what you have set for object (EntityBox, EntityRadius), then you will be picking.
 - `Collisions src_type, dest_type, method, response` - method has been deprecated, collisions now work with what you have set.
-- `CollisionImpulse` - impulse from physics collisions
+- `CollisionImpulse` - impulse from physical object, not from usual collision object
 - Picking: `CameraPick`, `EntityPick`, `LinePick`, `EntityVisible` everything works as before.
 
 Details:
 - **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the body will use hull shape collider if it's mesh.
-- For **non-physical** objects the old swept logic remains: each `UpdateWorld`, objects with a non-zero `EntityType` record collisions along their movement path and the position is corrected against planes. So `ResetEntity`, moving via `MoveEntity`/`TranslateEntity`/`PositionEntity`, and changing `EntityRadius` at runtime work as before.
+- For **non-physical** objects the old swept logic remains: each `UpdateWorld`, objects with a non-zero `EntityType` record collisions along their movement path and the position is corrected against planes.
 - A type only participates in physics as "dynamic" if a non-zero response is set for it in `Collisions`; otherwise it is static.
-- `EntityRadius` with zero radii and `EntityBox` with an empty box hide the collider.
 - For debugging shapes: `DrawPhysicsDebug aabb, mesh`.
 
 Important:
 - `UpdateWorld elapsed, simulation` - **the second parameter is now the simulation time**. If you pass 0 or less, physics does not step (only the swept collisions from section 4 remain).
 - Simulation settings go through `EngineSetting "physics::key", "value"`: `physics::framerate` (60 Hz), `physics::gravity` (`0,-9.81,0`), `physics::scale` (world scale), `physics::meshthickness`, `physics::maxcollisionbodies`.
 - Physics is designed for metric scale (units roughly 0.01-10). If the scene uses large units, tune `physics::scale`.
-
-## 5. Models
-- MD2 and BSP formats got removed
-- Current supported mesh formats: `.x`, `.b3d`, `obj`, `fbx`, `gltf`
 
 ## This engine is used by:
 - [SCP: Containment Breach 2](https://store.steampowered.com/app/3257000/SCP_Containment_Breach_2/)
