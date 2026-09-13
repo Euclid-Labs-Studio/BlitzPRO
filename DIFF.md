@@ -41,7 +41,7 @@ This gives advantage and speed - ResizeImage, ScaleImage, RotateImage, etc..., a
 ## 3. Collisions: the old collisions system lives, but works a little bit differently
 
 The collisions logic changes:
-- `GetEntityShape` - gets EntityBox, EntityRadius, EntityCylinder box (GetEntityShape(ent, &x, &y, &z, &width, &height, &depth))
+- `GetEntityShape` - gets EntityBox, EntityRadius, EntityCylinder box (GetEntityShape(ent, VarPtr x, VarPtr y, VarPtr z, VarPtr width, VarPtr height, VarPtr depth))
 - `EntityPickMode entity, enable, obscurer=1`, `GetEntityPickMode` - now what you have set for object (EntityBox, EntityRadius), then you will be picking.
 - `Collisions src_type, dest_type, method, response` - method has been deprecated, collisions now work with what you have set.
 - `CollisionImpulse` - impulse from physical object, not from usual collision object
