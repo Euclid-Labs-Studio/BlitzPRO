@@ -56,5 +56,5 @@ Important:
 - `UpdateWorld elapsed, simulation` - **the second parameter is now the simulation time**. If you pass 0 or less, physics does not step (only the swept collisions from section 4 remain).
 - Simulation settings go through `EngineSetting "physics::key", "value"`: `physics::framerate` (60 Hz), `physics::gravity` (`0,-9.81,0`), `physics::scale` (world scale), `physics::meshthickness`, `physics::maxcollisionbodies`.
 - Physics is designed for metric scale (units roughly 0.01-10). If the scene uses large units, tune `physics::scale`.
-- There are some old DLLs that only work with DirectX7 (FastImage, BlitzMovie), they need to be replaced or deleted. The engine will not work with them, because the DirectX versions are different. For example, FastImage is no longer needed, because BlitzPRO is much faster.
+- There are some old DLLs that only work with DirectX7 (for example: FastImage, BlitzMovie), they need to be replaced or deleted. The engine will not work with them, because the DirectX versions are different. For example, FastImage is no longer needed, because BlitzPRO is much faster.
 - If you are adding new features to the old FMOD via userlib, rename the old one fmod.dll on fmodex.dll and in userlib too. Otherwise you will get linking errors, because BlitzPRO uses new FMOD 2.03, but not a FMOD Ex
