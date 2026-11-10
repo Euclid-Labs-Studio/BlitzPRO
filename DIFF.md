@@ -14,8 +14,8 @@ Flags 1-128 match classic Blitz3D one-to-one. Flag values 256 and above were cha
 | 32  | Clamp V                      | Clamp V                           |
 | 64  | Spherical environment map    | Spherical environment map         |
 | 128 | Cubic environment map        | Cubic environment map             |
-| 256 | Store texture in vram        | Hardware Render-Target            |
-| 512 | Force high color textures    | Dynamic texture (fast Lock, NOT a render target) |
+| 256 | Store texture in vram        | Hardware render target            |
+| 512 | Force high color textures    | Dynamic texture (fast write-only lock, not a render target) |
 | 1024 | - | D16 depth texture |
 | 2048 | - | D32 depth texture (D24X8 on DirectX 9) |
 | 4096 | - | D24S8 depth-stencil texture |
@@ -25,12 +25,12 @@ Flags 1-128 match classic Blitz3D one-to-one. Flag values 256 and above were cha
 | 65536| - | A32B32G32R32F |
 | 131072| - | Offscreen texture surface |
 | 262144| - | Texture is not resized by `TextureDivisor` |
-| 524288| - | Loads the texture asynchronously |
+| 524288| - | UAV Texture for Compute shaders |
 
 What to do:
 - Flags 1-128 don't require any changes - everything stays as before (including clamp U/V, sphere and cube). `CreateTexture(w,h,128)` still makes a cube map.
 - **Render-to-texture.** Set the **256** flag to get a true hardware render target. Without it `SetBuffer` still accepts the texture and rendering works, but only through emulation (copying back and forth). This is slow, so use the **256** flag for anything you render to.
-- Flag 512 ("high color" in classic) means DYNAMIC (fast lock, not a render target). If it is being used for rendering, replace it with 256.
+- Flag 512 ("high color" in classic) is now DYNAMIC - a fast, write-only texture, not a render target. It is not readable back (`ReadPixelFast` returns nothing useful), and locking it discards the whole texture, so you have to fill every pixel yourself. Use it only when you just need to stream pixels in quickly.
 - Depth textures: 1024 (D16), 2048 (D32, D24X8 on DirectX 9), 4096 (D24S8) - for shadows and as the `depth` parameter of `SetBuffer`.
 - Flag 524288 loads the texture on a background thread - most useful with `LoadTexture` / `TextureFilter`, wait with `AwaitTextures`.
 
@@ -50,7 +50,7 @@ Details:
 - **Physical bodies** are enabled with the new commands (section 5). The body shape is set with the same commands: `EntityRadius` → sphere, `EntityBox` → box, `EntityCylinder` → cylinder; otherwise the body will use hull shape collider if it's mesh.
 - For **non-physical** objects the old swept logic remains: each `UpdateWorld`, objects with a non-zero `EntityType` record collisions along their movement path and the position is corrected against planes.
 - A type only participates in physics as "dynamic" if a non-zero response is set for it in `Collisions`; otherwise it is static.
-- For debugging shapes: `DrawPhysicsDebug aabb, mesh`.
+- For debugging shapes: `DrawPhysicsDebug camera, aabb, mesh`.
 
 Important:
 - `UpdateWorld elapsed, simulation` - **the second parameter is now the simulation time**. If you pass 0 or less, physics does not step (only the swept collisions from section 4 remain).

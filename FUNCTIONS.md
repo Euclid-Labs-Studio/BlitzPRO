@@ -25,7 +25,10 @@ A list of all functions added to the BlitzPRO
 | `%BufferHeight buffer` | Buffer height in pixels |
 | `%BufferDepth buffer` | Buffer color depth (bits per pixel) |
 | `%DepthBuffer` | Returns a pointer to the depth buffer |
-| `DrawPhysicsDebug aabb=1 mesh=1` | Renders debug visualization of physics bodies (AABB boxes and trimeshes) |
+| `%BufferData buffer` | Returns a pointer to the raw data of a locked buffer |
+| `%BufferPitch buffer` | Returns the row pitch (in bytes) of a locked buffer |
+| `DrawPhysicsDebug camera aabb=1 mesh=1` | Renders debug visualization of physics bodies (AABB boxes and trimeshes) for a camera |
+| `DrawNavmeshDebug camera` | Renders debug visualization of the navmeshes of all entities for a camera |
 | `%ColorAlpha` | Returns the current alpha channel value of the active color |
 | `RoundedRect x y width height radius solid=1 angle=0` | Draws a rectangle with rounded corners |
 | `ProgressOval x y width height progress thickness solid=1 angle=0` | Draws an oval progress bar with specified thickness and progress |
@@ -70,6 +73,7 @@ A list of all functions added to the BlitzPRO
 | `BrushEffectVector brush x=0 y=0 z=0 w=0 semantic=0` | Sets a vector shader parameter on a brush |
 | `BrushEffectMatrix brush var value semantic=0` | Sets a matrix shader parameter on a brush |
 | `BrushEffectTexture brush var tex semantic=0` | Binds a texture to a shader parameter on a brush |
+| `BrushEffectTechnique brush var` | Sets the active technique of the effect applied to a brush |
 | `BrushEffectBoolArray brush var bnk semantic=0` | Sets an array of boolean shader parameters on a brush from a bank |
 | `BrushEffectIntArray brush var bnk semantic=0` | Sets an array of integer shader parameters on a brush from a bank |
 | `BrushEffectFloatArray brush var bnk semantic=0` | Sets an array of float shader parameters on a brush from a bank |
@@ -87,6 +91,7 @@ A list of all functions added to the BlitzPRO
 | `%FindMesh file` | Searches for an already loaded mesh by filename. Returns a pointer |
 | `%CreateMeshCube mesh parent=0` | Creates a cube from an mesh AABB |
 | `%WeldMesh mesh epsilon` | Welds nearby vertices of a mesh within the given tolerance. Returns a new mesh |
+| `SimplifyMesh mesh percent` | Simplifies a mesh, keeping the given percentage of its triangles (0.0-1.0) |
 | `MeshThickness mesh thickness` | Computes mesh collisions volume for physics |
 | `UpdateTB mesh` | Recalculates tangent and binormal vectors |
 | `#MeshX mesh minmax` | Returns the minimum (minmax=0) or maximum (minmax=1) X coordinate of a mesh |
@@ -119,6 +124,10 @@ A list of all functions added to the BlitzPRO
 | `EffectMatrixArray effect var bnk semantic=0` | Sets an array of matrix shader parameters from a bank |
 | `%EffectHasSemantic effect var` | Checks if a shader variable has a given semantic |
 | `%EffectHasVariable effect var` | Checks if a variable exists in a shader |
+| `PreloadEffect file defs=""` | Starts compiling a shader effect in the background |
+| `%PreloadedEffectCount` | Returns the number of effects that have finished preloading |
+| `%PreloadEffectTotal` | Returns the total number of effects requested for preloading |
+| `%EffectDispatch effect x y z` | Dispatches a compute shader with the given thread group counts |
 
 ---
 
@@ -126,12 +135,14 @@ A list of all functions added to the BlitzPRO
 
 | Function | Description |
 |----------|-------------|
-| `%ShadowManagerCreateSlot` | Creates a slot for rendering a shadow map |
+| `%ShadowManagerCreateSlot type` | Creates a slot for rendering a shadow map for specified type |
 | `ShadowManagerFreeSlot slot` | Frees a shadow map slot |
-| `ShadowManagerSetParams bias slope caster_mask tween` | Sets shadow manager parameters (bias, slope, caster mask, tween) |
-| `ShadowManagerRenderPoint slot buff depth effect cam x0 y0 z0 x y z range` | Renders a shadow map from a point light source |
-| `ShadowManagerRenderSpot slot buff depth effect cam x0 y0 z0 pitch0 yaw0 x y z pitch yaw range fov` | Renders a shadow map from a spotlight |
-| `ShadowManagerRenderDir slot buff depth effect cam x0 y0 z0 pitch0 yaw0 x y z pitch yaw extrusion cascades split maxfar` | Renders a shadow map from a directional light (cascaded shadows) |
+| `%ShadowManagerAssign slot effect` | Assigns a shadow data to an effect |
+| `ShadowManagerSetSize type size` | Sets the shadow map resolution for a light type |
+| `ShadowManagerSetParams bias slope caster_mask` | Sets shadow bias, slope bias and the caster mask |
+| `%ShadowManagerRenderPoint slot cam x y z range tween=1` | Renders a shadow map from a point light source |
+| `%ShadowManagerRenderSpot slot cam x y z pitch yaw range fov tween=1` | Renders a shadow map from a spotlight |
+| `%ShadowManagerRenderDir slot cam x y z pitch yaw extrusion cascades split maxfar tween=1` | Renders a cascaded shadow map from a directional light |
 
 ---
 
@@ -166,6 +177,7 @@ A list of all functions added to the BlitzPRO
 | `ChannelFlush channel` | Flushes all buffered audio data in a channel |
 | `#ChannelLevel channel` | Returns the current peak output level of a sound channel (0.0 = silence) |
 | `ChannelReverb channel wetlevel drylevel decaytime hfdecayratio dsp` | Adds a reverb effect to a channel. Returns DSP handle |
+| `CalculateReverb entity wet dry decay hf scale=1` | Estimates reverb parameters from the geometry around an entity (writes to the VarPtr arguments) |
 | `ChannelEcho channel delay feedback drylevel wetlevel dsp` | Adds an echo effect to a channel |
 | `ChannelChorus channel mix rate depth dsp` | Adds a chorus effect to a channel |
 | `ChannelFlanger channel mix depth rate dsp` | Adds a flanger effect to a channel |
@@ -211,6 +223,7 @@ A list of all functions added to the BlitzPRO
 | `EntityEffectVector entity x=0 y=0 z=0 w=0 semantic=0` | Sets a vector shader parameter on an entity |
 | `EntityEffectMatrix entity var value semantic=0` | Sets a matrix shader parameter on an entity |
 | `EntityEffectTexture entity var tex semantic=0` | Binds a texture to a shader parameter on an entity |
+| `EntityEffectTechnique entity var` | Sets the active technique of the effect applied to an entity |
 | `EntityEffectBoolArray entity var bnk semantic=0` | Sets an array of boolean shader parameters on an entity's brush from a bank |
 | `EntityEffectIntArray entity var bnk semantic=0` | Sets an array of integer shader parameters on an entity's brush from a bank |
 | `EntityEffectFloatArray entity var bnk semantic=0` | Sets an array of float shader parameters on an entity's brush from a bank |
@@ -261,6 +274,23 @@ A list of all functions added to the BlitzPRO
 
 ---
 
+## Navmesh
+
+| Function | Description |
+|----------|-------------|
+| `%GenerateNavmesh entity cell_size=0 cell_height=0 agent_height=0 agent_radius=0 agent_max_climb=0 agent_max_slope=0` | Builds a navmesh from an entity and its children |
+| `$NavmeshBuildError` | Returns the error text from the last navmesh build |
+| `%FindNavmeshPath navmesh from_x from_y from_z to_x to_y to_z` | Finds a path between two points. Returns a path handle, or 0 on failure |
+| `FreeNavmeshPath path=0` | Frees a path handle |
+| `%NavmeshPathPointCount path=0` | Number of points in a path |
+| `#NavmeshPathX path index` | X coordinate of a path point (index is 1-based) |
+| `#NavmeshPathY path index` | Y coordinate of a path point |
+| `#NavmeshPathZ path index` | Z coordinate of a path point |
+| `#SnapToNavmesh navmesh x y z component=2` | Snaps a point to the closest position on the navmesh. Returns one component (0=X, 1=Y, 2=Z) |
+| `DrawNavmeshDebug camera` | Renders debug visualization of the navmeshes of all entities |
+
+---
+
 ## Effekseer (Particle Effects)
 
 | Function | Description |
@@ -279,16 +309,14 @@ A list of all functions added to the BlitzPRO
 
 | Function | Description |
 |----------|-------------|
-| `%SoftBody mesh stiffness=0 pressure=0` | Converts a mesh into a soft body with given stiffness and pressure |
-| `SoftStiffness mesh stiffness` | Sets the stiffness of a soft body |
-| `SoftPressure mesh pressure` | Sets the internal pressure of a soft body |
-| `SoftDamping mesh damping` | Sets the damping of a soft body |
-| `SoftPin mesh surface vertex` | Pins a soft body vertex in space |
-| `SoftUnPin mesh surface vertex` | Unpins a soft body vertex |
-| `SoftPinAt mesh x y z radius` | Pins all vertices within a given radius of a point |
-| `SoftUnPinAll mesh` | Unpins all vertices of a soft body |
-| `SoftImpulse mesh x y z` | Applies an impulse to a soft body |
-| `%IsSoftBody mesh` | Checks if a mesh is a soft body |
+| `%SoftEntity entity stiffness=0 pressure=0` | Converts a mesh entity into a soft body with given stiffness and pressure |
+| `%IsSoftEntity entity` | Checks if an entity is a soft body |
+| `EntityStiffness entity stiffness` | Sets the stiffness of a soft body |
+| `EntityPressure entity pressure` | Sets the internal pressure of a soft body |
+| `EntityPinVertex entity surface vertex` | Pins a soft body vertex in space |
+| `EntityUnPinVertex entity surface vertex` | Unpins a soft body vertex |
+| `EntityPinVerticesAt entity x y z radius` | Pins all vertices within a given radius of a point |
+| `EntityUnPinVertices entity` | Unpins all vertices of a soft body |
 
 ---
 
