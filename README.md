@@ -22,7 +22,7 @@ Feel free to make [issue](https://github.com/Euclid-Labs-Studio/BlitzPRO/issues/
 - Faster than old Blitz3D
 - Debugger Flame Graph
 - New crash handler
-- Asynchronous texture loading ($80000 flag)
+- Asynchronous texture loading
 - Fastest font rendering with UTF-8 support
 - And a lot of other stuff you should definitely check out yourself!
 
